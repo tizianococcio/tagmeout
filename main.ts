@@ -1,5 +1,6 @@
 // Import the necessary Obsidian components
-import { Plugin, TFile, MarkdownPostProcessorContext, MarkdownRenderer } from 'obsidian';
+import { Plugin, TFile, MarkdownPostProcessorContext, MarkdownRenderer, App } from 'obsidian';
+import * as path from 'path';
 
 // Define the plugin class, which should extend the Plugin class from Obsidian
 export default class TagReaderPlugin extends Plugin {
@@ -20,17 +21,18 @@ export default class TagReaderPlugin extends Plugin {
         this.app.metadataCache.on('changed', this.handleFileChange.bind(this));
     }
     async handleFileChange(file: TFile) {
-        // Replace this with the actual file path containing the tags
-        const fileContainingTagsPath = this.app.vault.getAbstractFileByPath(`${this.filename}.md`);
+        
+        const activeFile = this.getActiveFilePath()
+        const fullPath = path.join(activeFile? activeFile : "", `${this.filename}.md`);
+        const fileContainingTagsPath = this.app.vault.getAbstractFileByPath(fullPath);
     
         if (file.path === fileContainingTagsPath?.path && this.el && this.ctx) {
           // The file containing the tags has changed, update the list
-          // You can call a function here to update the list or perform any other necessary actions
           this.el.empty(); // Clear the current content of the HTMLElement
           await this.processCodeBlock(this.source, this.el, this.ctx); // Call processCodeBlock() with the stored HTMLElement and MarkdownPostProcessorContext
-    
         }
     }
+   
     async processCodeBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
         this.source = source;
         this.el = el;
@@ -46,7 +48,9 @@ export default class TagReaderPlugin extends Plugin {
         const tags = tag.split(',').map((tag) => `#${tag.trim()}`);
 
         // Retrieve the file from the vault
-        const file = this.app.vault.getAbstractFileByPath(`${filename}.md`);
+        const activeFile = this.getActiveFilePath()
+        const fullPath = path.join(activeFile? activeFile : "", `${filename}.md`);
+        const file = this.app.vault.getAbstractFileByPath(fullPath);
 
         // Initialize an object to store the headers following each tag
         const headersFollowingTags: Record<string, string[]> = {};
@@ -74,13 +78,13 @@ export default class TagReaderPlugin extends Plugin {
     }
     parseTagsFromFileContent(content: string, tags: string[], headersFollowingTags: Record<string, string[]>) {
         // Define a regular expression to match tags followed by headers in the content
-        const tagAndHeaderRegex = /(^|\s)(#[^\s]+)([\s\S]*?)(^#+\s[^\n]+)/gm;
+        const tagAndHeaderRegex = /(^|\s)(#[^\s]+)(?:[\s\S]*?)(?<=\n)([^\n]+)/gm;
         let match;
 
         // Iterate over the matches and update the tags object and headersFollowingTags object
         while ((match = tagAndHeaderRegex.exec(content)) !== null) {
             const tag = match[2].toLowerCase();
-            const header = match[4];
+            const header = match[3];
             // Check if the tag is one of the tags we are looking for
             if (tags.includes(tag)) {
                 // Check if the tag is already present in the headersFollowingTags object
@@ -94,6 +98,15 @@ export default class TagReaderPlugin extends Plugin {
             }
         }
     }
+    getActiveFilePath(): string | null {
+        // Get the path of the active file
+        const activeFile = app.workspace.getActiveFile();
+        if (activeFile === null) {
+            return null;
+        }
+        // Return the path of the active file - Note that I select parent.path instead of path because I want the path of the folder containing the file
+        return activeFile.parent.path;
+    }     
     async renderHeadersList(file: TFile, tags: string[], headersFollowingTags: Record<string, string[]>, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
             // Render the output to the provided HTMLElement
             const div_container = el.createEl('div');
@@ -124,8 +137,5 @@ export default class TagReaderPlugin extends Plugin {
                 }
             }
 
-    }        
-
-
-
+    }
 }
