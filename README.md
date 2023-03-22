@@ -6,7 +6,7 @@ Obsidian plug-in to extract the headers that follow each of the specified tags.
     JobHunt:waiting,rejected,followup
     ```
 
-Given that your vault contains a file called 'JobHunt', it renders something like this:
+Given that in the **same** folder there is a file called 'JobHunt', it renders something like this:
 # #waiting (2)
 - Company 1 Link
 - Company 2 Link
