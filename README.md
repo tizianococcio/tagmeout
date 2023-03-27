@@ -1,5 +1,5 @@
 # TagMeOut
-Obsidian plug-in to extract the headers that follow each of the specified tags.
+[Obsidian](https://obsidian.md/) plug-in to extract the headers that follow each of the specified tags.
 
 ## Example
     ```tagsummary
