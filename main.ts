@@ -1,6 +1,5 @@
 // Import the necessary Obsidian components
-import { Plugin, TFile, MarkdownPostProcessorContext, MarkdownRenderer, App } from 'obsidian';
-import * as path from 'path';
+import { Plugin, TFile, MarkdownPostProcessorContext, MarkdownRenderer, normalizePath } from 'obsidian';
 
 // Define the plugin class, which should extend the Plugin class from Obsidian
 export default class TagReaderPlugin extends Plugin {
@@ -18,12 +17,18 @@ export default class TagReaderPlugin extends Plugin {
         // Register the plugin with Obsidian
         this.registerMarkdownCodeBlockProcessor('tagsummary', this.processCodeBlock.bind(this));
 
-        this.app.metadataCache.on('changed', this.handleFileChange.bind(this));
+        // Using registerEvent so that the plugin is automatically unloaded when Obsidian is closed
+        this.registerEvent(
+            this.app.metadataCache.on('changed', this.handleFileChange.bind(this))
+        );
+            
     }
     async handleFileChange(file: TFile) {
         
         const activeFile = this.getActiveFilePath()
-        const fullPath = path.join(activeFile? activeFile : "", `${this.filename}.md`);
+
+        // Use normalizePath() to get the path of the file containing the tags in a platform-independent way
+        const fullPath = normalizePath(`${activeFile}/${this.filename}.md`);
         const fileContainingTagsPath = this.app.vault.getAbstractFileByPath(fullPath);
     
         if (file.path === fileContainingTagsPath?.path && this.el && this.ctx) {
@@ -49,7 +54,9 @@ export default class TagReaderPlugin extends Plugin {
 
         // Retrieve the file from the vault
         const activeFile = this.getActiveFilePath()
-        const fullPath = path.join(activeFile? activeFile : "", `${filename}.md`);
+        
+        // Use normalizePath() to get the path of the file containing the tags in a platform-independent way
+        const fullPath = normalizePath(`${activeFile}/${this.filename}.md`);
         const file = this.app.vault.getAbstractFileByPath(fullPath);
 
         // Initialize an object to store the headers following each tag
@@ -57,8 +64,8 @@ export default class TagReaderPlugin extends Plugin {
 
         // check if file exists
         if (file instanceof TFile) {
-            // Read the file content
-            const fileContent = await this.app.vault.read(file);
+            // Read the file content from cache if possible
+            const fileContent = await this.app.vault.cachedRead(file);
 
             // Parse the file content to extract the headers following each tag
             this.parseTagsFromFileContent(fileContent, tags, headersFollowingTags);
@@ -68,7 +75,7 @@ export default class TagReaderPlugin extends Plugin {
 
         } else {
             // File not found
-            const output = `File ${filename} not found`;
+            const output = `File ${fullPath} not found`;
 
             // Render
             el.createEl('div', { text: output });

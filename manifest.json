@@ -6,7 +6,5 @@
 	"description": "This plug-in extracts the header following each specified tag. It can be useful to create a summary of a note.",
 	"author": "Tiziano Cocciò",
 	"authorUrl": "https://github.com/tizianococcio/",
-	"repo": "https://github.com/tizianococcio/tagmeout",
-	"fundingUrl": "",
 	"isDesktopOnly": false
 }
